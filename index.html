@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Docket Management</title>
+   <link rel="stylesheet" href="style.css">
+   
+</head>
+<body>
+    <h1>Create a Docket</h1>
+    <div class="mainDiv">
+        <div class="inerDiv">
+
+    <form id="docketForm">
+        
+        <label for="name" class="name"> Name : </label>
+        <input type="text" id="name" required><br>
+
+        <label for="startTime">Start Time:</label>
+        <input type="time" id="startTime" required><br>
+
+        <label for="endTime">End Time:</label>
+        <input type="time" id="endTime" required><br>
+
+        <label for="hoursWorked">No. of Hours Worked:</label>
+        <input type="number" id="hoursWorked" required><br>
+
+        <label for="rate">Rate per Hour:</label>
+        <input type="number" id="rate" required><br>
+
+        <label for="supplier">Supplier:</label>
+
+         <!-- Input element for CSV file -->
+    <input type="file" id="csvFileInput" accept=".csv" required><br>
+
+        <select id="supplier" required>
+            <option value="" disabled selected>Select a Supplier</option>
+            <!-- Populate this dropdown dynamically with JavaScript -->
+        </select><br>
+
+        <label for="purchaseOrder">Purchase Order:</label>
+        <select id="purchaseOrder" required>
+            <option value="" disabled selected>Select a Purchase Order</option>
+            <!-- Populate this dropdown dynamically with JavaScript based on the selected supplier -->
+        </select><br>
+        <label for="description">Description:</label>
+        <input type="text" id="description" readonly><br>
+
+        <button type="button" onclick="createDocket()">Create Docket</button>
+    </form>
+</div>
+
+      
+    <h2>Docket List</h2>
+    <ul id="docketList">
+        <!-- Dockets will be displayed here dynamically with JavaScript -->
+    </ul>
+
+</div>
+
+ 
+    
+
+    <script>
+        let csvData = [];
+
+        // Function to populate the supplier dropdown
+        function populateSupplierDropdown() {
+            const supplierDropdown = document.getElementById('supplier');
+            const uniqueSuppliers = [...new Set(csvData.map(item => item['Supplier']))];
+            supplierDropdown.innerHTML = '<option value="" disabled selected>Select a Supplier</option>';
+            uniqueSuppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier;
+                option.textContent = supplier;
+                supplierDropdown.appendChild(option);
+            });
+        }
+            
+        // Function to populate the purchase order dropdown based on the selected supplier
+        function populatePurchaseOrderDropdown(selectedSupplier) {
+            const purchaseOrderDropdown = document.getElementById('purchaseOrder');
+            purchaseOrderDropdown.innerHTML = '<option value="" disabled selected>Select a Purchase Order</option>';
+            const filteredPOs = csvData.filter(item => item['Supplier'] === selectedSupplier);
+            filteredPOs.forEach(po => {
+                const option = document.createElement('option');
+                option.value = po['PO Number'];
+                option.textContent = `${po['Description']} (PO: ${po['PO Number']})`;
+                purchaseOrderDropdown.appendChild(option);
+            });
+        }
+
+         // Function to update the description field
+         function updateDescription(selectedPurchaseOrder) {
+            const descriptionInput = document.getElementById('description');
+            const selectedPO = csvData.find(item => item['PO Number'] === selectedPurchaseOrder);
+            if (selectedPO) {
+                descriptionInput.value = selectedPO['Description'];
+            } else {
+                descriptionInput.value = '';
+            }
+        }
+        // Function to create a docket
+        function createDocket() {
+            // ... (The code for creating a docket remains the same)
+            const name = document.getElementById('name').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const hoursWorked = document.getElementById('hoursWorked').value;
+            const rate = document.getElementById('rate').value;
+            const supplier = document.getElementById('supplier').value;
+            const purchaseOrder = document.getElementById('purchaseOrder').value;
+            const description = document.getElementById('description').value;
+
+            // Create docket object
+            const docket = {
+                Name: name,
+                'Start time': startTime,
+                'End time': endTime,
+                'No. of hours worked': hoursWorked,
+                'Rate per hour': rate,
+                'Supplier Name': supplier,
+                'Purchase order': purchaseOrder,
+                'Description' :description,
+            };
+
+            // Display the docket in the list view
+            const docketList = document.getElementById('docketList');
+            const listItem = document.createElement('li');
+            listItem.textContent = JSON.stringify(docket);
+            docketList.appendChild(listItem);
+
+            // Clear form fields
+            document.getElementById('docketForm').reset();
+        }
+
+        // Function to read and process data from a CSV file
+        function processDataFromCSV(csvContent) {
+            
+            const rows = csvContent.split('\n');
+            const headers = rows[0].split(',');
+            const data = [];
+
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i].split(',');
+                if (row.length === headers.length) {
+                    const rowData = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        rowData[headers[j].trim()] = row[j].trim();
+                    }
+                    data.push(rowData);
+                }
+            }
+
+            csvData = data; // Update the csvData array
+            populateSupplierDropdown(); // Populate supplier dropdown after reading CSV
+        }
+
+        
+        // Event listener for the CSV file input
+        document.getElementById('csvFileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    const csvContent = e.target.result;
+                    processDataFromCSV(csvContent);
+                };
+
+                reader.readAsText(file);
+            }
+        });
+
+        // Event listener for the supplier dropdown
+        document.getElementById('supplier').addEventListener('change', function () {
+            const selectedSupplier = this.value;
+            if (selectedSupplier) {
+                populatePurchaseOrderDropdown(selectedSupplier);
+            } else {
+                // Reset the Purchase Order dropdown if no supplier is selected
+                document.getElementById('purchaseOrder').innerHTML = '<option value="" disabled selected>Select a Purchase Order</option>';
+            }
+        });
+          // Event listener for the purchase order dropdown
+          document.getElementById('purchaseOrder').addEventListener('change', function () {
+            const selectedPO = this.value;
+            updateDescription(selectedPO);
+        });
+
+        // Initial population of the supplier dropdown
+        populateSupplierDropdown();
+    </script>
+</body>
+</html>
+ 
+
+
